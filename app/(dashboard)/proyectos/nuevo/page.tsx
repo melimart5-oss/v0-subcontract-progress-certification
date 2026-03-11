@@ -126,13 +126,14 @@ export default function NewProjectPage() {
                   />
                 </Field>
                 <Field>
-                  <FieldLabel>Presupuesto (EUR)</FieldLabel>
+                  <FieldLabel>Presupuesto</FieldLabel>
                   <Input
                     type="number"
                     step="0.01"
                     min="0"
                     value={formData.budget}
                     onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+                    placeholder="0.00"
                   />
                 </Field>
               </div>
