@@ -38,7 +38,7 @@ interface SubcontractFormProps {
 
 interface LineItem {
   id?: string
-  item_number: string
+  item_code: string
   description: string
   unit: string
   unit_price: number
@@ -51,18 +51,21 @@ export function SubcontractForm({ projects, subcontractors, initialData }: Subco
   const isEditing = !!initialData
 
   const [formData, setFormData] = useState({
-    code: initialData?.code || '',
+    internal_code: initialData?.code || '',
     project_id: initialData?.project_id || '',
     subcontractor_id: initialData?.subcontractor_id || '',
     description: initialData?.description || '',
     start_date: initialData?.start_date || '',
-    end_date: initialData?.end_date || '',
+    required_completion_date: initialData?.end_date || '',
     status: initialData?.status || 'draft',
   })
 
   const [items, setItems] = useState<LineItem[]>(
-    initialData?.items || [
-      { item_number: '1', description: '', unit: 'ud', unit_price: 0, contracted_quantity: 0 }
+    initialData?.items?.map(item => ({
+      ...item,
+      item_code: item.item_number || '1'
+    })) || [
+      { item_code: '1', description: '', unit: 'ud', unit_price: 0, contracted_quantity: 0 }
     ]
   )
 
@@ -73,7 +76,7 @@ export function SubcontractForm({ projects, subcontractors, initialData }: Subco
     setItems([
       ...items,
       {
-        item_number: String(items.length + 1),
+        item_code: String(items.length + 1),
         description: '',
         unit: 'ud',
         unit_price: 0,
@@ -109,7 +112,7 @@ export function SubcontractForm({ projects, subcontractors, initialData }: Subco
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('No autenticado')
 
-      const total_amount = calculateTotal()
+      const contract_total_amount = calculateTotal()
 
       if (isEditing) {
         // Update subcontract
@@ -117,7 +120,7 @@ export function SubcontractForm({ projects, subcontractors, initialData }: Subco
           .from('subcontracts')
           .update({
             ...formData,
-            total_amount,
+            contract_total_amount,
           })
           .eq('id', initialData.id)
 
@@ -132,13 +135,15 @@ export function SubcontractForm({ projects, subcontractors, initialData }: Subco
         const { error: itemsError } = await supabase
           .from('subcontract_items')
           .insert(
-            items.map(item => ({
+            items.map((item, index) => ({
               subcontract_id: initialData.id,
-              item_number: item.item_number,
+              item_code: item.item_code,
               description: item.description,
               unit: item.unit,
               unit_price: item.unit_price,
               contracted_quantity: item.contracted_quantity,
+              total_amount: item.unit_price * item.contracted_quantity,
+              sort_order: index + 1,
             }))
           )
 
@@ -151,7 +156,7 @@ export function SubcontractForm({ projects, subcontractors, initialData }: Subco
           .from('subcontracts')
           .insert({
             ...formData,
-            total_amount,
+            contract_total_amount,
             created_by: user.id,
           })
           .select()
@@ -163,13 +168,15 @@ export function SubcontractForm({ projects, subcontractors, initialData }: Subco
         const { error: itemsError } = await supabase
           .from('subcontract_items')
           .insert(
-            items.map(item => ({
+            items.map((item, index) => ({
               subcontract_id: subcontract.id,
-              item_number: item.item_number,
+              item_code: item.item_code,
               description: item.description,
               unit: item.unit,
               unit_price: item.unit_price,
               contracted_quantity: item.contracted_quantity,
+              total_amount: item.unit_price * item.contracted_quantity,
+              sort_order: index + 1,
             }))
           )
 
@@ -201,11 +208,11 @@ export function SubcontractForm({ projects, subcontractors, initialData }: Subco
           <FieldGroup>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <Field>
-                <FieldLabel htmlFor="code">Código *</FieldLabel>
+                <FieldLabel htmlFor="internal_code">Codigo *</FieldLabel>
                 <Input
-                  id="code"
-                  value={formData.code}
-                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                  id="internal_code"
+                  value={formData.internal_code}
+                  onChange={(e) => setFormData({ ...formData, internal_code: e.target.value })}
                   placeholder="SUB-001"
                   required
                 />
@@ -268,12 +275,12 @@ export function SubcontractForm({ projects, subcontractors, initialData }: Subco
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="end_date">Fecha Fin</FieldLabel>
+                <FieldLabel htmlFor="required_completion_date">Fecha Fin</FieldLabel>
                 <Input
-                  id="end_date"
+                  id="required_completion_date"
                   type="date"
-                  value={formData.end_date}
-                  onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                  value={formData.required_completion_date}
+                  onChange={(e) => setFormData({ ...formData, required_completion_date: e.target.value })}
                 />
               </Field>
               <Field>
@@ -327,10 +334,10 @@ export function SubcontractForm({ projects, subcontractors, initialData }: Subco
             {items.map((item, index) => (
               <div key={index} className="grid gap-2 lg:grid-cols-12 items-start p-3 border rounded-lg">
                 <div className="lg:col-span-1">
-                  <FieldLabel className="lg:hidden">Nº</FieldLabel>
+                  <FieldLabel className="lg:hidden">Nro</FieldLabel>
                   <Input
-                    value={item.item_number}
-                    onChange={(e) => updateItem(index, 'item_number', e.target.value)}
+                    value={item.item_code}
+                    onChange={(e) => updateItem(index, 'item_code', e.target.value)}
                     placeholder="1"
                   />
                 </div>
