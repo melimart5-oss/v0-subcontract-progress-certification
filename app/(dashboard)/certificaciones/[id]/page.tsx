@@ -5,18 +5,10 @@ import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { StatusBadge } from '@/components/ui/status-badge'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  TableFooter,
-} from '@/components/ui/table'
-import { Edit, Award, CheckCircle, Printer, Building2, User, Calendar, TrendingUp } from 'lucide-react'
+import { Edit, Award, Printer } from 'lucide-react'
 import { CertificateApprovalActions } from '@/components/certificates/certificate-approval-actions'
-import { formatCurrency, formatDate } from '@/lib/format'
+import { CertificateSummaryCard, CertificateItemsTable } from '@/components/certificates/certificate-detail-content'
+import { formatDate } from '@/lib/format'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -143,36 +135,7 @@ export default async function CertificacionDetailPage({ params }: PageProps) {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Resumen Económico</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Subtotal</p>
-                <p className="text-xl font-medium">{formatCurrency(certificate.subtotal || 0)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">IVA ({certificate.tax_rate}%)</p>
-                <p className="text-xl font-medium">{formatCurrency(certificate.tax_amount || 0)}</p>
-              </div>
-              <div className="pt-4 border-t">
-                <p className="text-sm text-muted-foreground">Total</p>
-                <p className="text-3xl font-bold text-primary">{formatCurrency(certificate.total || 0)}</p>
-              </div>
-              {certificate.status === 'approved' && (
-                <div className="pt-4 border-t">
-                  <div className="flex items-center gap-2 text-sm text-success">
-                    <CheckCircle className="w-4 h-4" />
-                    <span>Aprobado por {certificate.approved_by_profile?.full_name}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {formatDate(certificate.approved_at)}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <CertificateSummaryCard certificate={certificate} />
         </div>
 
         {/* Approval Actions */}
@@ -181,82 +144,7 @@ export default async function CertificacionDetailPage({ params }: PageProps) {
         )}
 
         {/* Certificate Items */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Detalle de Partidas Certificadas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-16">Nº</TableHead>
-                  <TableHead>Descripción</TableHead>
-                  <TableHead className="w-16">Ud.</TableHead>
-                  <TableHead className="text-right w-24">P. Unitario</TableHead>
-                  <TableHead className="text-right w-24">Certificado</TableHead>
-                  <TableHead className="text-right w-24">Acumulado</TableHead>
-                  <TableHead className="text-right w-28">Importe</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {certificate.items?.map((item: {
-                  id: string
-                  certified_quantity: number
-                  certified_amount: number
-                  accumulated_quantity: number
-                  subcontract_item?: {
-                    item_number: string
-                    description: string
-                    unit: string
-                    unit_price: number
-                  }
-                }) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">
-                      {item.subcontract_item?.item_number}
-                    </TableCell>
-                    <TableCell>{item.subcontract_item?.description}</TableCell>
-                    <TableCell>{item.subcontract_item?.unit}</TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(item.subcontract_item?.unit_price || 0)}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {item.certified_quantity}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {item.accumulated_quantity}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCurrency(item.certified_amount || 0)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-              <TableFooter>
-                <TableRow>
-                  <TableCell colSpan={6} className="text-right">Subtotal</TableCell>
-                  <TableCell className="text-right font-medium">
-                    {formatCurrency(certificate.subtotal || 0)}
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell colSpan={6} className="text-right">
-                    IVA ({certificate.tax_rate}%)
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    {formatCurrency(certificate.tax_amount || 0)}
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell colSpan={6} className="text-right font-bold">Total</TableCell>
-                  <TableCell className="text-right font-bold text-lg">
-                    {formatCurrency(certificate.total || 0)}
-                  </TableCell>
-                </TableRow>
-              </TableFooter>
-            </Table>
-          </CardContent>
-        </Card>
+        <CertificateItemsTable certificate={certificate} />
       </div>
     </>
   )

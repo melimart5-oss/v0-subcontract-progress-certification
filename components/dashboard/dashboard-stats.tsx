@@ -2,8 +2,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import { FileText, TrendingUp, Clock, Award, ArrowUpRight, ArrowDownRight } from 'lucide-react'
-import { formatCurrency, formatPercent } from '@/lib/format'
+import { FileText, TrendingUp, Clock, Award, ArrowUpRight } from 'lucide-react'
+import { formatPercent } from '@/lib/format'
+import { useCurrencyFormat } from '@/hooks/use-currency-format'
 
 interface DashboardStatsProps {
   stats: {
@@ -19,6 +20,8 @@ interface DashboardStatsProps {
 }
 
 export function DashboardStats({ stats }: DashboardStatsProps) {
+  const { format } = useCurrencyFormat()
+  
   const certificationPercentage = stats.totalContractedAmount > 0 
     ? (stats.totalCertifiedAmount / stats.totalContractedAmount) * 100
     : 0
@@ -63,7 +66,7 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold tracking-tight">
-            {formatCurrency(stats.totalContractedAmount)}
+            {format(stats.totalContractedAmount)}
           </div>
           <p className="text-xs text-muted-foreground mt-2">
             {stats.subcontractorsCount} subcontratistas
@@ -83,7 +86,7 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold tracking-tight">
-            {formatCurrency(stats.totalCertifiedAmount)}
+            {format(stats.totalCertifiedAmount)}
           </div>
           <div className="mt-3 space-y-1">
             <div className="flex items-center justify-between text-xs">

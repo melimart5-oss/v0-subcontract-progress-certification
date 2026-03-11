@@ -10,6 +10,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
+import { CurrencySelector } from '@/components/currency-selector'
 
 interface BreadcrumbItem {
   label: string
@@ -20,9 +21,10 @@ interface PageHeaderProps {
   title: string
   breadcrumbs?: BreadcrumbItem[]
   actions?: React.ReactNode
+  showCurrencySelector?: boolean
 }
 
-export function PageHeader({ title, breadcrumbs, actions }: PageHeaderProps) {
+export function PageHeader({ title, breadcrumbs, actions, showCurrencySelector = true }: PageHeaderProps) {
   return (
     <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 bg-background border-b px-4">
       <SidebarTrigger className="-ml-1" />
@@ -47,11 +49,10 @@ export function PageHeader({ title, breadcrumbs, actions }: PageHeaderProps) {
         <h1 className="text-lg font-semibold">{title}</h1>
       )}
 
-      {actions && (
-        <div className="ml-auto flex items-center gap-2">
-          {actions}
-        </div>
-      )}
+      <div className="ml-auto flex items-center gap-2">
+        {showCurrencySelector && <CurrencySelector />}
+        {actions}
+      </div>
     </header>
   )
 }

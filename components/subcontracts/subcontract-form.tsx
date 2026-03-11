@@ -11,6 +11,7 @@ import { FieldGroup, Field, FieldLabel, FieldError } from '@/components/ui/field
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Spinner } from '@/components/ui/spinner'
 import { Plus, Trash2, Save } from 'lucide-react'
+import { useCurrencyFormat } from '@/hooks/use-currency-format'
 
 interface SubcontractFormProps {
   projects: Array<{ id: string; code: string; name: string }>
@@ -185,12 +186,7 @@ export function SubcontractForm({ projects, subcontractors, initialData }: Subco
     }
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount)
-  }
+  const { format: formatCurrency } = useCurrencyFormat()
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">

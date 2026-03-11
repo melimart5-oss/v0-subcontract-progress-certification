@@ -1,11 +1,13 @@
+'use client'
+
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Empty } from '@/components/ui/empty'
-import { StatusBadge } from '@/components/ui/status-badge'
-import { ClipboardCheck, Award, ArrowRight, Clock, AlertCircle } from 'lucide-react'
-import { formatCurrency, formatDate } from '@/lib/format'
+import { ClipboardCheck, Award, ArrowRight, Clock } from 'lucide-react'
+import { formatDate } from '@/lib/format'
+import { useCurrencyFormat } from '@/hooks/use-currency-format'
 
 interface PendingApprovalsProps {
   pendingAMs: Array<{
@@ -38,6 +40,7 @@ interface PendingApprovalsProps {
 }
 
 export function PendingApprovals({ pendingAMs, pendingCertificates }: PendingApprovalsProps) {
+  const { format } = useCurrencyFormat()
   const hasItems = pendingAMs.length > 0 || pendingCertificates.length > 0
 
   return (
@@ -118,7 +121,7 @@ export function PendingApprovals({ pendingAMs, pendingCertificates }: PendingApp
                       </div>
                       <div className="text-right ml-4">
                         <p className="text-sm font-medium text-primary">
-                          {formatCurrency(cert.total)}
+                          {format(cert.total)}
                         </p>
                       </div>
                       <ArrowRight className="w-4 h-4 ml-2 text-muted-foreground" />

@@ -4,8 +4,6 @@ import { createClient } from '@/lib/supabase/server'
 import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
-import { Empty } from '@/components/ui/empty'
 import { StatusBadge } from '@/components/ui/status-badge'
 import {
   Table,
@@ -14,11 +12,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  TableFooter,
 } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Edit, Plus, FileText, ClipboardCheck, Award, Building2, Calendar, TrendingUp, Phone, Mail, User } from 'lucide-react'
-import { formatCurrency, formatDate, formatPercent } from '@/lib/format'
+import { Edit, Plus, FileText, ClipboardCheck, Award, Building2, Calendar, Phone, User } from 'lucide-react'
+import { formatDate } from '@/lib/format'
+import { SubcontractItemsTable } from '@/components/subcontracts/subcontract-items-table'
+import { SubcontractSummaryCard } from '@/components/subcontracts/subcontract-summary-card'
+import { CertificatesTable } from '@/components/certificates/certificates-table'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -164,42 +164,13 @@ export default async function SubcontratoDetailPage({ params }: PageProps) {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-primary" />
-                Resumen Económico
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wide">Importe Contratado</p>
-                <p className="text-2xl font-bold">{formatCurrency(totalAmount)}</p>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Certificado</span>
-                  <span className="font-medium text-success">{formatCurrency(certifiedAmount)}</span>
-                </div>
-                <Progress value={progress} className="h-2" />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{formatPercent(progress)} completado</span>
-                  <span>Pendiente: {formatCurrency(pendingAmount)}</span>
-                </div>
-              </div>
-              {subcontract.subcontractor?.email && (
-                <div className="pt-4 border-t">
-                  <a 
-                    href={`mailto:${subcontract.subcontractor.email}`}
-                    className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
-                  >
-                    <Mail className="w-4 h-4" />
-                    {subcontract.subcontractor.email}
-                  </a>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <SubcontractSummaryCard
+            totalAmount={totalAmount}
+            certifiedAmount={certifiedAmount}
+            progress={progress}
+            pendingAmount={pendingAmount}
+            email={subcontract.subcontractor?.email}
+          />
         </div>
 
         {/* Tabs for Items, AMs, Certificates */}
@@ -216,47 +187,10 @@ export default async function SubcontratoDetailPage({ params }: PageProps) {
                 <CardTitle>Partidas Contratadas</CardTitle>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-16">Nº</TableHead>
-                      <TableHead>Descripción</TableHead>
-                      <TableHead className="w-20">Ud.</TableHead>
-                      <TableHead className="text-right w-28">P. Unitario</TableHead>
-                      <TableHead className="text-right w-24">Cantidad</TableHead>
-                      <TableHead className="text-right w-32">Importe</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {subcontract.items?.map((item: {
-                      id: string
-                      item_number: string
-                      description: string
-                      unit: string
-                      unit_price: number
-                      contracted_quantity: number
-                    }) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-medium">{item.item_number}</TableCell>
-                        <TableCell>{item.description}</TableCell>
-                        <TableCell>{item.unit}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(item.unit_price)}</TableCell>
-                        <TableCell className="text-right">{item.contracted_quantity}</TableCell>
-                        <TableCell className="text-right font-medium">
-                          {formatCurrency(item.unit_price * item.contracted_quantity)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                  <TableFooter>
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-right font-medium">Total</TableCell>
-                      <TableCell className="text-right font-bold">
-                        {formatCurrency(subcontract.total_amount || 0)}
-                      </TableCell>
-                    </TableRow>
-                  </TableFooter>
-                </Table>
+                <SubcontractItemsTable
+                  items={subcontract.items || []}
+                  totalAmount={subcontract.total_amount || 0}
+                />
               </CardContent>
             </Card>
           </TabsContent>
@@ -340,38 +274,7 @@ export default async function SubcontratoDetailPage({ params }: PageProps) {
                     No hay certificaciones para este subcontrato
                   </p>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Código</TableHead>
-                        <TableHead>Período</TableHead>
-                        <TableHead className="text-right">Total</TableHead>
-                        <TableHead>Estado</TableHead>
-                        <TableHead className="text-right">Acciones</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {certificates.map((cert) => (
-                        <TableRow key={cert.id}>
-                          <TableCell className="font-medium">{cert.code}</TableCell>
-                          <TableCell>
-                            {formatDate(cert.period_start)} - {formatDate(cert.period_end)}
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {formatCurrency(cert.total)}
-                          </TableCell>
-                          <TableCell>
-                            <StatusBadge status={cert.status} type="certificate" />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="ghost" size="sm" asChild>
-                              <Link href={`/certificaciones/${cert.id}`}>Ver</Link>
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <CertificatesTable certificates={certificates || []} />
                 )}
               </CardContent>
             </Card>

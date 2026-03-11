@@ -19,6 +19,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Save, Send } from 'lucide-react'
+import { useCurrencyFormat } from '@/hooks/use-currency-format'
 
 interface SubcontractItem {
   id: string
@@ -220,12 +221,7 @@ export function MeasurementActForm({
     }
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount)
-  }
+  const { format: formatCurrency } = useCurrencyFormat()
 
   const calculateItemAmount = (item: SubcontractItem, measured: number) => {
     return item.unit_price * measured

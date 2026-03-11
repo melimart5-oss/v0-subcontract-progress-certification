@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
+import { CurrencyProvider } from '@/lib/currency-context'
 
 export default async function DashboardLayout({
   children,
@@ -22,11 +23,13 @@ export default async function DashboardLayout({
     .single()
 
   return (
-    <SidebarProvider>
-      <AppSidebar user={user} profile={profile} />
-      <SidebarInset>
-        {children}
-      </SidebarInset>
-    </SidebarProvider>
+    <CurrencyProvider>
+      <SidebarProvider>
+        <AppSidebar user={user} profile={profile} />
+        <SidebarInset>
+          {children}
+        </SidebarInset>
+      </SidebarProvider>
+    </CurrencyProvider>
   )
 }

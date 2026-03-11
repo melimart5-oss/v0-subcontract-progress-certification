@@ -1,12 +1,46 @@
 // Formatting utilities for the application
 
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('es-ES', {
+export type Currency = 'ARS' | 'USD'
+
+// Default currency for the application
+export const DEFAULT_CURRENCY: Currency = 'ARS'
+
+const currencyConfig: Record<Currency, { locale: string; symbol: string; code: string }> = {
+  ARS: { locale: 'es-AR', symbol: '$', code: 'ARS' },
+  USD: { locale: 'en-US', symbol: 'US$', code: 'USD' },
+}
+
+export function formatCurrency(amount: number, currency: Currency = DEFAULT_CURRENCY): string {
+  const config = currencyConfig[currency]
+  
+  // For ARS, use a custom format to show $ with thousands separator
+  if (currency === 'ARS') {
+    return new Intl.NumberFormat('es-AR', {
+      style: 'currency',
+      currency: 'ARS',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount)
+  }
+  
+  return new Intl.NumberFormat(config.locale, {
     style: 'currency',
-    currency: 'EUR',
+    currency: config.code,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount)
+}
+
+export function formatCurrencyCompact(amount: number, currency: Currency = DEFAULT_CURRENCY): string {
+  const config = currencyConfig[currency]
+  
+  if (amount >= 1000000) {
+    return `${config.symbol} ${(amount / 1000000).toFixed(1)}M`
+  }
+  if (amount >= 1000) {
+    return `${config.symbol} ${(amount / 1000).toFixed(0)}K`
+  }
+  return formatCurrency(amount, currency)
 }
 
 export function formatNumber(num: number, decimals = 2): string {

@@ -20,6 +20,7 @@ import {
   TableFooter,
 } from '@/components/ui/table'
 import { Save, Send } from 'lucide-react'
+import { useCurrencyFormat } from '@/hooks/use-currency-format'
 
 interface SubcontractItem {
   id: string
@@ -183,12 +184,7 @@ export function CertificateForm({
     }
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount)
-  }
+  const { format: formatCurrency } = useCurrencyFormat()
 
   return (
     <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-6">
