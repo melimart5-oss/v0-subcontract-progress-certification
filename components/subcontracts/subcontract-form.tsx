@@ -110,9 +110,13 @@ export function SubcontractForm({ projects, subcontractors, initialData }: Subco
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
+      console.log("[v0] User:", user)
       if (!user) throw new Error('No autenticado')
 
       const contract_total_amount = calculateTotal()
+      console.log("[v0] Form data:", formData)
+      console.log("[v0] Items:", items)
+      console.log("[v0] Total:", contract_total_amount)
 
       if (isEditing) {
         // Update subcontract
@@ -152,34 +156,40 @@ export function SubcontractForm({ projects, subcontractors, initialData }: Subco
         router.push(`/subcontratos/${initialData.id}`)
       } else {
         // Create new subcontract
+        const insertData = {
+          ...formData,
+          contract_total_amount,
+          created_by: user.id,
+        }
+        console.log("[v0] Insert data:", insertData)
+        
         const { data: subcontract, error: createError } = await supabase
           .from('subcontracts')
-          .insert({
-            ...formData,
-            contract_total_amount,
-            created_by: user.id,
-          })
+          .insert(insertData)
           .select()
           .single()
 
+        console.log("[v0] Create result:", { subcontract, createError })
         if (createError) throw createError
 
         // Insert items
+        const itemsData = items.map((item, index) => ({
+          subcontract_id: subcontract.id,
+          item_code: item.item_code,
+          description: item.description,
+          unit: item.unit,
+          unit_price: item.unit_price,
+          contracted_quantity: item.contracted_quantity,
+          total_amount: item.unit_price * item.contracted_quantity,
+          sort_order: index + 1,
+        }))
+        console.log("[v0] Items data:", itemsData)
+        
         const { error: itemsError } = await supabase
           .from('subcontract_items')
-          .insert(
-            items.map((item, index) => ({
-              subcontract_id: subcontract.id,
-              item_code: item.item_code,
-              description: item.description,
-              unit: item.unit,
-              unit_price: item.unit_price,
-              contracted_quantity: item.contracted_quantity,
-              total_amount: item.unit_price * item.contracted_quantity,
-              sort_order: index + 1,
-            }))
-          )
+          .insert(itemsData)
 
+        console.log("[v0] Items insert result:", { itemsError })
         if (itemsError) throw itemsError
 
         router.push(`/subcontratos/${subcontract.id}`)
