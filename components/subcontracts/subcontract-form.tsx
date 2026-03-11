@@ -110,13 +110,9 @@ export function SubcontractForm({ projects, subcontractors, initialData }: Subco
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      console.log("[v0] User:", user)
       if (!user) throw new Error('No autenticado')
 
       const contract_total_amount = calculateTotal()
-      console.log("[v0] Form data:", formData)
-      console.log("[v0] Items:", items)
-      console.log("[v0] Total:", contract_total_amount)
 
       if (isEditing) {
         // Update subcontract
@@ -167,7 +163,6 @@ export function SubcontractForm({ projects, subcontractors, initialData }: Subco
           contract_total_amount,
           created_by: user.id,
         }
-        console.log("[v0] Insert data:", insertData)
         
         const { data: subcontract, error: createError } = await supabase
           .from('subcontracts')
@@ -175,7 +170,6 @@ export function SubcontractForm({ projects, subcontractors, initialData }: Subco
           .select()
           .single()
 
-        console.log("[v0] Create result:", { subcontract, createError })
         if (createError) throw createError
 
         // Insert items
@@ -189,23 +183,32 @@ export function SubcontractForm({ projects, subcontractors, initialData }: Subco
           total_amount: item.unit_price * item.contracted_quantity,
           sort_order: index + 1,
         }))
-        console.log("[v0] Items data:", itemsData)
         
         const { error: itemsError } = await supabase
           .from('subcontract_items')
           .insert(itemsData)
 
-        console.log("[v0] Items insert result:", { itemsError })
         if (itemsError) throw itemsError
 
         router.push(`/subcontratos/${subcontract.id}`)
       }
 
       router.refresh()
-    } catch (err) {
-      console.log("[v0] Error:", err)
-      const errorMessage = err instanceof Error ? err.message : JSON.stringify(err)
-      setError(`Error al guardar: ${errorMessage}`)
+    } catch (err: unknown) {
+      let errorMessage = 'Error desconocido'
+      
+      if (err && typeof err === 'object' && 'code' in err) {
+        const pgError = err as { code: string; message?: string }
+        if (pgError.code === '23505') {
+          errorMessage = 'Ya existe un subcontrato con ese codigo. Por favor, use un codigo diferente.'
+        } else {
+          errorMessage = pgError.message || JSON.stringify(err)
+        }
+      } else if (err instanceof Error) {
+        errorMessage = err.message
+      }
+      
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
