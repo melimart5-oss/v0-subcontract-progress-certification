@@ -25,10 +25,9 @@ export interface Project {
 
 export interface Subcontractor {
   id: string
-  code: string
-  name: string
-  cif: string | null
-  contact_person: string | null
+  company_name: string
+  cuit_cuil: string | null
+  contact_name: string | null
   email: string | null
   phone: string | null
   address: string | null

@@ -34,10 +34,10 @@ export default function SubcontractorsPage() {
   const [saving, setSaving] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
-    name: "",
-    cif: "",
+    company_name: "",
+    cuit_cuil: "",
     address: "",
-    contact_person: "",
+    contact_name: "",
     phone: "",
     email: "",
   })
@@ -59,8 +59,8 @@ export default function SubcontractorsPage() {
   }
 
   const filteredSubcontractors = subcontractors.filter(s =>
-    s.name.toLowerCase().includes(search.toLowerCase()) ||
-    s.cif?.toLowerCase().includes(search.toLowerCase())
+    s.company_name?.toLowerCase().includes(search.toLowerCase()) ||
+    s.cuit_cuil?.toLowerCase().includes(search.toLowerCase())
   )
 
   async function handleSubmit(e: React.FormEvent) {
@@ -78,22 +78,22 @@ export default function SubcontractorsPage() {
     } else {
       await supabase
         .from("subcontractors")
-        .insert({ ...formData, created_by: user.id })
+        .insert(formData)
     }
 
     setDialogOpen(false)
     setEditingId(null)
-    setFormData({ name: "", cif: "", address: "", contact_person: "", phone: "", email: "" })
+    setFormData({ company_name: "", cuit_cuil: "", address: "", contact_name: "", phone: "", email: "" })
     setSaving(false)
     loadSubcontractors()
   }
 
   function handleEdit(subcontractor: Subcontractor) {
     setFormData({
-      name: subcontractor.name,
-      cif: subcontractor.cif || "",
+      company_name: subcontractor.company_name || "",
+      cuit_cuil: subcontractor.cuit_cuil || "",
       address: subcontractor.address || "",
-      contact_person: subcontractor.contact_person || "",
+      contact_name: subcontractor.contact_name || "",
       phone: subcontractor.phone || "",
       email: subcontractor.email || "",
     })
@@ -126,7 +126,7 @@ export default function SubcontractorsPage() {
           setDialogOpen(open)
           if (!open) {
             setEditingId(null)
-            setFormData({ name: "", cif: "", address: "", contact_person: "", phone: "", email: "" })
+            setFormData({ company_name: "", cuit_cuil: "", address: "", contact_name: "", phone: "", email: "" })
           }
         }}>
           <DialogTrigger asChild>
@@ -149,20 +149,21 @@ export default function SubcontractorsPage() {
                 <Field>
                   <FieldLabel>Nombre / Razón Social *</FieldLabel>
                   <Input
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    value={formData.company_name}
+                    onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
                     required
                   />
                 </Field>
                 <Field>
-                  <FieldLabel>CIF</FieldLabel>
+                  <FieldLabel>CUIT/CUIL</FieldLabel>
                   <Input
-                    value={formData.cif}
-                    onChange={(e) => setFormData({ ...formData, cif: e.target.value })}
+                    value={formData.cuit_cuil}
+                    onChange={(e) => setFormData({ ...formData, cuit_cuil: e.target.value })}
+                    placeholder="XX-XXXXXXXX-X"
                   />
                 </Field>
                 <Field>
-                  <FieldLabel>Dirección</FieldLabel>
+                  <FieldLabel>Direccion</FieldLabel>
                   <Input
                     value={formData.address}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
@@ -171,12 +172,12 @@ export default function SubcontractorsPage() {
                 <Field>
                   <FieldLabel>Persona de contacto</FieldLabel>
                   <Input
-                    value={formData.contact_person}
-                    onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
+                    value={formData.contact_name}
+                    onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
                   />
                 </Field>
                 <Field>
-                  <FieldLabel>Teléfono</FieldLabel>
+                  <FieldLabel>Telefono</FieldLabel>
                   <Input
                     type="tel"
                     value={formData.phone}
@@ -229,9 +230,9 @@ export default function SubcontractorsPage() {
             <Card key={subcontractor.id}>
               <CardHeader className="flex flex-row items-start justify-between pb-2">
                 <div>
-                  <CardTitle className="text-base">{subcontractor.name}</CardTitle>
-                  {subcontractor.cif && (
-                    <p className="text-sm text-muted-foreground">{subcontractor.cif}</p>
+                  <CardTitle className="text-base">{subcontractor.company_name}</CardTitle>
+                  {subcontractor.cuit_cuil && (
+                    <p className="text-sm text-muted-foreground">CUIT: {subcontractor.cuit_cuil}</p>
                   )}
                 </div>
                 <DropdownMenu>
@@ -256,8 +257,8 @@ export default function SubcontractorsPage() {
                 </DropdownMenu>
               </CardHeader>
               <CardContent className="space-y-2">
-                {subcontractor.contact_person && (
-                  <p className="text-sm">{subcontractor.contact_person}</p>
+                {subcontractor.contact_name && (
+                  <p className="text-sm">{subcontractor.contact_name}</p>
                 )}
                 {subcontractor.phone && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
