@@ -7,8 +7,15 @@ export default async function NuevoSubcontratoPage() {
 
   const [{ data: projects }, { data: subcontractors }] = await Promise.all([
     supabase.from('projects').select('id, code, name').eq('status', 'active').order('name'),
-    supabase.from('subcontractors').select('id, code, name').order('name'),
+    supabase.from('subcontractors').select('id, company_name').order('company_name'),
   ])
+
+  // Transform subcontractors to match the expected format
+  const formattedSubcontractors = (subcontractors || []).map(s => ({
+    id: s.id,
+    code: s.id,
+    name: s.company_name || '',
+  }))
 
   return (
     <>
@@ -23,7 +30,7 @@ export default async function NuevoSubcontratoPage() {
       <div className="flex-1 p-6">
         <SubcontractForm 
           projects={projects || []} 
-          subcontractors={subcontractors || []} 
+          subcontractors={formattedSubcontractors} 
         />
       </div>
     </>
