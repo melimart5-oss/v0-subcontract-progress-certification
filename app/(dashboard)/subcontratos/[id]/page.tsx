@@ -4,7 +4,9 @@ import { createClient } from '@/lib/supabase/server'
 import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Empty } from '@/components/ui/empty'
+import { StatusBadge } from '@/components/ui/status-badge'
 import {
   Table,
   TableBody,
@@ -15,21 +17,8 @@ import {
   TableFooter,
 } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Edit, Plus, FileText, ClipboardCheck, Award } from 'lucide-react'
-
-const statusLabels: Record<string, string> = {
-  draft: 'Borrador',
-  active: 'Activo',
-  completed: 'Completado',
-  cancelled: 'Cancelado',
-}
-
-const statusVariants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  draft: 'secondary',
-  active: 'default',
-  completed: 'outline',
-  cancelled: 'destructive',
-}
+import { Edit, Plus, FileText, ClipboardCheck, Award, Building2, Calendar, TrendingUp, Phone, Mail, User } from 'lucide-react'
+import { formatCurrency, formatDate, formatPercent } from '@/lib/format'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -61,24 +50,21 @@ export default async function SubcontratoDetailPage({ params }: PageProps) {
     .eq('subcontract_id', id)
     .order('created_at', { ascending: false })
 
-  // Get related certificates
+  // Get related certificates with totals
   const { data: certificates } = await supabase
     .from('certificates')
     .select('*')
     .eq('subcontract_id', id)
     .order('created_at', { ascending: false })
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount)
-  }
-
-  const formatDate = (date: string | null) => {
-    if (!date) return '-'
-    return new Date(date).toLocaleDateString('es-ES')
-  }
+  // Calculate certified amount
+  const certifiedAmount = (certificates || [])
+    .filter(c => c.status === 'approved' || c.status === 'issued')
+    .reduce((sum, c) => sum + (c.total || 0), 0)
+  
+  const totalAmount = subcontract.total_amount || 0
+  const progress = totalAmount > 0 ? (certifiedAmount / totalAmount) * 100 : 0
+  const pendingAmount = totalAmount - certifiedAmount
 
   return (
     <>
@@ -111,60 +97,107 @@ export default async function SubcontratoDetailPage({ params }: PageProps) {
         <div className="grid gap-6 lg:grid-cols-3">
           <Card className="lg:col-span-2">
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex items-start justify-between">
                 <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="w-5 h-5" />
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <FileText className="w-5 h-5 text-primary" />
                     {subcontract.code}
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="mt-1">
                     {subcontract.description || 'Sin descripción'}
                   </CardDescription>
                 </div>
-                <Badge variant={statusVariants[subcontract.status] || 'secondary'}>
-                  {statusLabels[subcontract.status] || subcontract.status}
-                </Badge>
+                <StatusBadge status={subcontract.status} type="subcontract" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <p className="text-sm text-muted-foreground">Proyecto</p>
-                  <p className="font-medium">
-                    {subcontract.project?.code} - {subcontract.project?.name}
-                  </p>
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-muted">
+                    <Building2 className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Proyecto</p>
+                    <p className="font-medium">
+                      {subcontract.project?.code} - {subcontract.project?.name}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Subcontratista</p>
-                  <p className="font-medium">{subcontract.subcontractor?.name}</p>
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-muted">
+                    <User className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Subcontratista</p>
+                    <p className="font-medium">{subcontract.subcontractor?.name}</p>
+                    {subcontract.subcontractor?.cif && (
+                      <p className="text-xs text-muted-foreground">CIF: {subcontract.subcontractor.cif}</p>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Fecha Inicio</p>
-                  <p className="font-medium">{formatDate(subcontract.start_date)}</p>
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-muted">
+                    <Calendar className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Período</p>
+                    <p className="font-medium">
+                      {formatDate(subcontract.start_date)} - {formatDate(subcontract.end_date)}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Fecha Fin</p>
-                  <p className="font-medium">{formatDate(subcontract.end_date)}</p>
-                </div>
+                {subcontract.subcontractor?.contact_person && (
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-muted">
+                      <Phone className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Contacto</p>
+                      <p className="font-medium">{subcontract.subcontractor.contact_person}</p>
+                      {subcontract.subcontractor.phone && (
+                        <p className="text-xs text-muted-foreground">{subcontract.subcontractor.phone}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Resumen Económico</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-primary" />
+                Resumen Económico
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-5">
               <div>
-                <p className="text-sm text-muted-foreground">Importe Contratado</p>
-                <p className="text-2xl font-bold">{formatCurrency(subcontract.total_amount || 0)}</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Importe Contratado</p>
+                <p className="text-2xl font-bold">{formatCurrency(totalAmount)}</p>
               </div>
-              <div className="pt-4 border-t">
-                <p className="text-sm text-muted-foreground">Contacto</p>
-                <p className="font-medium">{subcontract.subcontractor?.contact_person || '-'}</p>
-                <p className="text-sm text-muted-foreground">{subcontract.subcontractor?.email}</p>
-                <p className="text-sm text-muted-foreground">{subcontract.subcontractor?.phone}</p>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Certificado</span>
+                  <span className="font-medium text-success">{formatCurrency(certifiedAmount)}</span>
+                </div>
+                <Progress value={progress} className="h-2" />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>{formatPercent(progress)} completado</span>
+                  <span>Pendiente: {formatCurrency(pendingAmount)}</span>
+                </div>
               </div>
+              {subcontract.subcontractor?.email && (
+                <div className="pt-4 border-t">
+                  <a 
+                    href={`mailto:${subcontract.subcontractor.email}`}
+                    className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+                  >
+                    <Mail className="w-4 h-4" />
+                    {subcontract.subcontractor.email}
+                  </a>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -268,9 +301,7 @@ export default async function SubcontratoDetailPage({ params }: PageProps) {
                             {formatDate(am.period_start)} - {formatDate(am.period_end)}
                           </TableCell>
                           <TableCell>
-                            <Badge variant={statusVariants[am.status] || 'secondary'}>
-                              {statusLabels[am.status] || am.status}
-                            </Badge>
+                            <StatusBadge status={am.status} type="measurement_act" />
                           </TableCell>
                           <TableCell>{formatDate(am.created_at)}</TableCell>
                           <TableCell className="text-right">
@@ -330,9 +361,7 @@ export default async function SubcontratoDetailPage({ params }: PageProps) {
                             {formatCurrency(cert.total)}
                           </TableCell>
                           <TableCell>
-                            <Badge variant={statusVariants[cert.status] || 'secondary'}>
-                              {statusLabels[cert.status] || cert.status}
-                            </Badge>
+                            <StatusBadge status={cert.status} type="certificate" />
                           </TableCell>
                           <TableCell className="text-right">
                             <Button variant="ghost" size="sm" asChild>

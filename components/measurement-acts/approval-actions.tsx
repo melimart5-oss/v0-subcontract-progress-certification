@@ -18,13 +18,28 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { CheckCircle, XCircle } from 'lucide-react'
+import { CheckCircle, XCircle, AlertTriangle, ArrowRight } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 
 interface ApprovalActionsProps {
   amId: string
+  currentStatus?: string
 }
 
-export function ApprovalActions({ amId }: ApprovalActionsProps) {
+const approvalStepInfo = {
+  pending_jefe: {
+    title: 'Aprobación Jefe de Obra',
+    description: 'Esta acta requiere tu aprobación como Jefe de Obra. Al aprobar, pasará a revisión del Administrador.',
+    nextStep: 'Administrador',
+  },
+  pending_admin: {
+    title: 'Aprobación Final',
+    description: 'Esta acta ya fue aprobada por el Jefe de Obra. Tu aprobación finaliza el proceso y permite generar la certificación.',
+    nextStep: null,
+  },
+}
+
+export function ApprovalActions({ amId, currentStatus }: ApprovalActionsProps) {
   const router = useRouter()
   const supabase = createClient()
   const [loading, setLoading] = useState(false)
@@ -36,12 +51,29 @@ export function ApprovalActions({ amId }: ApprovalActionsProps) {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('No autenticado')
 
+      // Get user profile to determine next status
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      // Determine next status based on current status and role
+      let nextStatus = 'approved'
+      if (currentStatus === 'pending_jefe' && profile?.role === 'jefe_obra') {
+        nextStatus = 'pending_admin' // Move to admin approval
+      } else if (currentStatus === 'pending_admin' && profile?.role === 'admin') {
+        nextStatus = 'approved' // Final approval
+      }
+
       const { error } = await supabase
         .from('measurement_acts')
         .update({
-          status: 'approved',
-          approved_by: user.id,
-          approved_at: new Date().toISOString(),
+          status: nextStatus,
+          ...(nextStatus === 'approved' ? {
+            approved_by: user.id,
+            approved_at: new Date().toISOString(),
+          } : {}),
         })
         .eq('id', amId)
 
@@ -79,15 +111,37 @@ export function ApprovalActions({ amId }: ApprovalActionsProps) {
     }
   }
 
+  const stepInfo = approvalStepInfo[currentStatus as keyof typeof approvalStepInfo] || {
+    title: 'Acción Requerida',
+    description: 'Esta acta de medición está pendiente de tu aprobación',
+    nextStep: null,
+  }
+
   return (
     <Card className="border-warning bg-warning/5">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-warning-foreground">
-          Acción Requerida
-        </CardTitle>
-        <CardDescription>
-          Esta acta de medición está pendiente de tu aprobación
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-warning/10">
+              <AlertTriangle className="w-5 h-5 text-warning" />
+            </div>
+            <div>
+              <CardTitle className="text-lg">{stepInfo.title}</CardTitle>
+              <CardDescription className="mt-0.5">
+                {stepInfo.description}
+              </CardDescription>
+            </div>
+          </div>
+          {stepInfo.nextStep && (
+            <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Siguiente:</span>
+              <Badge variant="outline" className="flex items-center gap-1">
+                <ArrowRight className="w-3 h-3" />
+                {stepInfo.nextStep}
+              </Badge>
+            </div>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <div className="flex gap-4">

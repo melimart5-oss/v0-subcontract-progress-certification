@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/status-badge'
 import {
   Table,
   TableBody,
@@ -14,24 +14,9 @@ import {
   TableRow,
   TableFooter,
 } from '@/components/ui/table'
-import { Edit, Award, CheckCircle, Printer } from 'lucide-react'
+import { Edit, Award, CheckCircle, Printer, Building2, User, Calendar, TrendingUp } from 'lucide-react'
 import { CertificateApprovalActions } from '@/components/certificates/certificate-approval-actions'
-
-const statusLabels: Record<string, string> = {
-  draft: 'Borrador',
-  pending_approval: 'Pendiente Aprobación',
-  approved: 'Aprobado',
-  invoiced: 'Facturado',
-  paid: 'Pagado',
-}
-
-const statusVariants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  draft: 'secondary',
-  pending_approval: 'outline',
-  approved: 'default',
-  invoiced: 'secondary',
-  paid: 'default',
-}
+import { formatCurrency, formatDate } from '@/lib/format'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -74,18 +59,6 @@ export default async function CertificacionDetailPage({ params }: PageProps) {
 
   const canApprove = (profile?.role === 'admin' || profile?.role === 'jefe_obra') && 
     certificate.status === 'pending_approval'
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount)
-  }
-
-  const formatDate = (date: string | null) => {
-    if (!date) return '-'
-    return new Date(date).toLocaleDateString('es-ES')
-  }
 
   return (
     <>
@@ -130,9 +103,7 @@ export default async function CertificacionDetailPage({ params }: PageProps) {
                     Período: {formatDate(certificate.period_start)} - {formatDate(certificate.period_end)}
                   </CardDescription>
                 </div>
-                <Badge variant={statusVariants[certificate.status] || 'secondary'}>
-                  {statusLabels[certificate.status] || certificate.status}
-                </Badge>
+                <StatusBadge status={certificate.status} type="certificate" />
               </div>
             </CardHeader>
             <CardContent>

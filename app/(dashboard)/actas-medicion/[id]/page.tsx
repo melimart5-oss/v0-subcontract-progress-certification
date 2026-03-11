@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/status-badge'
 import {
   Table,
   TableBody,
@@ -14,22 +14,9 @@ import {
   TableRow,
   TableFooter,
 } from '@/components/ui/table'
-import { Edit, ClipboardCheck, CheckCircle, XCircle } from 'lucide-react'
+import { Edit, ClipboardCheck, CheckCircle, XCircle, Calendar, Building2, User, FileText, AlertCircle } from 'lucide-react'
 import { ApprovalActions } from '@/components/measurement-acts/approval-actions'
-
-const statusLabels: Record<string, string> = {
-  draft: 'Borrador',
-  pending_approval: 'Pendiente Aprobación',
-  approved: 'Aprobado',
-  rejected: 'Rechazado',
-}
-
-const statusVariants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  draft: 'secondary',
-  pending_approval: 'outline',
-  approved: 'default',
-  rejected: 'destructive',
-}
+import { formatCurrency, formatDate } from '@/lib/format'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -70,20 +57,10 @@ export default async function ActaMedicionDetailPage({ params }: PageProps) {
     notFound()
   }
 
-  const canApprove = (profile?.role === 'admin' || profile?.role === 'jefe_obra') && 
-    am.status === 'pending_approval'
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount)
-  }
-
-  const formatDate = (date: string | null) => {
-    if (!date) return '-'
-    return new Date(date).toLocaleDateString('es-ES')
-  }
+  // Check if user can approve (jefe_obra for pending_jefe, admin for pending_admin)
+  const canApproveJefe = profile?.role === 'jefe_obra' && am.status === 'pending_jefe'
+  const canApproveAdmin = profile?.role === 'admin' && am.status === 'pending_admin'
+  const canApprove = canApproveJefe || canApproveAdmin
 
   const totalMeasured = am.items?.reduce((acc: number, item: {
     measured_quantity: number
@@ -127,9 +104,7 @@ export default async function ActaMedicionDetailPage({ params }: PageProps) {
                     Período: {formatDate(am.period_start)} - {formatDate(am.period_end)}
                   </CardDescription>
                 </div>
-                <Badge variant={statusVariants[am.status] || 'secondary'}>
-                  {statusLabels[am.status] || am.status}
-                </Badge>
+                <StatusBadge status={am.status} type="measurement_act" />
               </div>
             </CardHeader>
             <CardContent>
@@ -202,7 +177,7 @@ export default async function ActaMedicionDetailPage({ params }: PageProps) {
 
         {/* Approval Actions */}
         {canApprove && (
-          <ApprovalActions amId={id} />
+          <ApprovalActions amId={id} currentStatus={am.status} />
         )}
 
         {/* Measurement Items */}

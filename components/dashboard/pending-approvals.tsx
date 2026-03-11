@@ -18,7 +18,23 @@ interface PendingApprovalsProps {
       code: string
       subcontractor?: {
         name: string
-  }
+      }
+    }
+  }>
+  pendingCertificates: Array<{
+    id: string
+    code: string
+    status: string
+    total: number
+    period_start: string
+    period_end: string
+    subcontract?: {
+      code: string
+      subcontractor?: {
+        name: string
+      }
+    }
+  }>
 }
 
 export function PendingApprovals({ pendingAMs, pendingCertificates }: PendingApprovalsProps) {
