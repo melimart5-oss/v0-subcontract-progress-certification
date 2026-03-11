@@ -49,11 +49,12 @@ export default function SubcontractorsPage() {
   }, [])
 
   async function loadSubcontractors() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("subcontractors")
       .select("*")
-      .order("name")
+      .order("company_name")
     
+    console.log("[v0] loadSubcontractors result:", { data, error })
     if (data) setSubcontractors(data)
     setLoading(false)
   }
@@ -68,17 +69,26 @@ export default function SubcontractorsPage() {
     setSaving(true)
 
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    console.log("[v0] handleSubmit user:", user)
+    if (!user) {
+      console.log("[v0] No user found, aborting")
+      setSaving(false)
+      return
+    }
+
+    console.log("[v0] Submitting formData:", formData)
 
     if (editingId) {
-      await supabase
+      const { data, error } = await supabase
         .from("subcontractors")
         .update(formData)
         .eq("id", editingId)
+      console.log("[v0] Update result:", { data, error })
     } else {
-      await supabase
+      const { data, error } = await supabase
         .from("subcontractors")
         .insert(formData)
+      console.log("[v0] Insert result:", { data, error })
     }
 
     setDialogOpen(false)
