@@ -157,7 +157,13 @@ export function SubcontractForm({ projects, subcontractors, initialData }: Subco
       } else {
         // Create new subcontract
         const insertData = {
-          ...formData,
+          internal_code: formData.internal_code,
+          project_id: formData.project_id || null,
+          subcontractor_id: formData.subcontractor_id || null,
+          description: formData.description || null,
+          start_date: formData.start_date || null,
+          required_completion_date: formData.required_completion_date || null,
+          status: formData.status,
           contract_total_amount,
           created_by: user.id,
         }
@@ -197,7 +203,9 @@ export function SubcontractForm({ projects, subcontractors, initialData }: Subco
 
       router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al guardar')
+      console.log("[v0] Error:", err)
+      const errorMessage = err instanceof Error ? err.message : JSON.stringify(err)
+      setError(`Error al guardar: ${errorMessage}`)
     } finally {
       setLoading(false)
     }
