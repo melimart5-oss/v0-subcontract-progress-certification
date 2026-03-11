@@ -120,96 +120,100 @@ export default function SubcontractorsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <>
       <PageHeader
         title="Subcontratistas"
-        description="Gestiona el directorio de subcontratistas"
-      >
-        <Dialog open={dialogOpen} onOpenChange={(open) => {
-          setDialogOpen(open)
-          if (!open) {
-            setEditingId(null)
-            setFormData({ company_name: "", cuit_cuil: "", address: "", contact_name: "", phone: "", email: "" })
-          }
-        }}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Nuevo Subcontratista
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
-            <form onSubmit={handleSubmit}>
-              <DialogHeader>
-                <DialogTitle>
-                  {editingId ? "Editar Subcontratista" : "Nuevo Subcontratista"}
-                </DialogTitle>
-                <DialogDescription>
-                  {editingId ? "Actualiza los datos del subcontratista" : "Registra un nuevo subcontratista en el sistema"}
-                </DialogDescription>
-              </DialogHeader>
-              <FieldGroup className="py-4">
-                <Field>
-                  <FieldLabel>Nombre / Razón Social *</FieldLabel>
-                  <Input
-                    value={formData.company_name}
-                    onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-                    required
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel>CUIT/CUIL</FieldLabel>
-                  <Input
-                    value={formData.cuit_cuil}
-                    onChange={(e) => setFormData({ ...formData, cuit_cuil: e.target.value })}
-                    placeholder="XX-XXXXXXXX-X"
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel>Direccion</FieldLabel>
-                  <Input
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel>Persona de contacto</FieldLabel>
-                  <Input
-                    value={formData.contact_name}
-                    onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel>Telefono</FieldLabel>
-                  <Input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel>Email</FieldLabel>
-                  <Input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  />
-                </Field>
-              </FieldGroup>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={saving}>
-                  {saving && <Spinner className="mr-2 h-4 w-4" />}
-                  {editingId ? "Guardar" : "Crear"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </PageHeader>
-
+        breadcrumbs={[
+          { label: 'Panel', href: '/dashboard' },
+          { label: 'Subcontratistas' },
+        ]}
+        actions={
+          <Dialog open={dialogOpen} onOpenChange={(open) => {
+            setDialogOpen(open)
+            if (!open) {
+              setEditingId(null)
+              setFormData({ company_name: "", cuit_cuil: "", address: "", contact_name: "", phone: "", email: "" })
+            }
+          }}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Subcontratista
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <form onSubmit={handleSubmit}>
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingId ? "Editar Subcontratista" : "Nuevo Subcontratista"}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {editingId ? "Actualiza los datos del subcontratista" : "Registra un nuevo subcontratista en el sistema"}
+                  </DialogDescription>
+                </DialogHeader>
+                <FieldGroup className="py-4">
+                  <Field>
+                    <FieldLabel>Nombre / Razon Social *</FieldLabel>
+                    <Input
+                      value={formData.company_name}
+                      onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                      required
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel>CUIT/CUIL</FieldLabel>
+                    <Input
+                      value={formData.cuit_cuil}
+                      onChange={(e) => setFormData({ ...formData, cuit_cuil: e.target.value })}
+                      placeholder="XX-XXXXXXXX-X"
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel>Direccion</FieldLabel>
+                    <Input
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel>Persona de contacto</FieldLabel>
+                    <Input
+                      value={formData.contact_name}
+                      onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel>Telefono</FieldLabel>
+                    <Input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel>Email</FieldLabel>
+                    <Input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    />
+                  </Field>
+                </FieldGroup>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={saving}>
+                    {saving && <Spinner className="mr-2 h-4 w-4" />}
+                    {editingId ? "Guardar" : "Crear"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        }
+      />
+      <div className="flex-1 p-6 space-y-6">
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
@@ -280,6 +284,7 @@ export default function SubcontractorsPage() {
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }
