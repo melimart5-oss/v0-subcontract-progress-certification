@@ -117,7 +117,7 @@ export function AppSidebar({ user, profile }: AppSidebarProps) {
     switch (role) {
       case 'admin': return 'Administrador'
       case 'jefe_obra': return 'Jefe de Obra'
-      case 'jefe_produccion': return 'Jefe de Producción'
+      case 'encargado': return 'Encargado de Obra'
       default: return 'Usuario'
     }
   }

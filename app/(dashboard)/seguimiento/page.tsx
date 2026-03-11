@@ -1,9 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 import { PageHeader } from '@/components/page-header'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
-import { BarChart3, TrendingUp, FileText, Award } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { StatusBadge } from '@/components/ui/status-badge'
+import { BarChart3, TrendingUp, FileText, Award, ExternalLink, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { formatCurrency, formatPercent } from '@/lib/format'
 
 export default async function SeguimientoPage() {
   const supabase = await createClient()
@@ -19,18 +23,9 @@ export default async function SeguimientoPage() {
       subcontractor:subcontractors(name),
       project:projects(code, name)
     `).eq('status', 'active'),
-    supabase.from('certificates').select('*').eq('status', 'approved'),
+    supabase.from('certificates').select('*').in('status', ['approved', 'issued']),
     supabase.from('measurement_acts').select('*'),
   ])
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount)
-  }
 
   // Calculate totals
   const totalContracted = subcontracts?.reduce((acc, s) => acc + (s.total_amount || 0), 0) || 0
@@ -138,47 +133,90 @@ export default async function SeguimientoPage() {
         {/* Subcontract Progress */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="w-5 h-5" />
-              Avance por Subcontrato
-            </CardTitle>
-            <CardDescription>
-              Porcentaje de certificación de cada subcontrato activo
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" />
+                  Avance por Subcontrato
+                </CardTitle>
+                <CardDescription>
+                  Porcentaje de certificación de cada subcontrato activo
+                </CardDescription>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/subcontratos">
+                  Ver todos
+                  <ExternalLink className="w-3.5 h-3.5 ml-1.5" />
+                </Link>
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-6">
+            <div className="space-y-4">
               {sortedStats.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">
-                  No hay subcontratos activos para mostrar
-                </p>
+                <div className="text-center py-12">
+                  <FileText className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
+                  <p className="text-muted-foreground">No hay subcontratos activos para mostrar</p>
+                  <Button variant="outline" size="sm" className="mt-4" asChild>
+                    <Link href="/subcontratos/nuevo">Crear subcontrato</Link>
+                  </Button>
+                </div>
               ) : (
                 sortedStats.map((stat) => (
-                  <div key={stat.id} className="space-y-2">
-                    <div className="flex items-center justify-between">
+                  <Link
+                    key={stat.id}
+                    href={`/subcontratos/${stat.id}`}
+                    className="block p-4 rounded-lg border hover:border-primary/50 hover:bg-muted/30 transition-all group"
+                  >
+                    <div className="flex items-start justify-between mb-3">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium truncate">{stat.code}</p>
-                          <Badge variant="outline" className="shrink-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-semibold truncate group-hover:text-primary transition-colors">
+                            {stat.code}
+                          </p>
+                          <Badge variant="outline" className="shrink-0 text-xs">
                             {stat.certificateCount} cert.
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground truncate">
-                          {stat.subcontractor?.name} | {stat.project?.code}
+                          {stat.subcontractor?.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground/70 truncate">
+                          Proyecto: {stat.project?.code} - {stat.project?.name}
                         </p>
                       </div>
                       <div className="text-right ml-4 shrink-0">
-                        <p className="font-bold">{stat.percentage.toFixed(1)}%</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatCurrency(stat.certified)} / {formatCurrency(stat.total_amount)}
+                        <div className="flex items-center gap-1">
+                          <span className={`text-xl font-bold ${
+                            stat.percentage >= 75 ? 'text-success' :
+                            stat.percentage >= 50 ? 'text-chart-3' :
+                            stat.percentage >= 25 ? 'text-warning' :
+                            'text-muted-foreground'
+                          }`}>
+                            {formatPercent(stat.percentage)}
+                          </span>
+                          {stat.percentage >= 50 ? (
+                            <ArrowUpRight className="w-4 h-4 text-success" />
+                          ) : (
+                            <ArrowDownRight className="w-4 h-4 text-warning" />
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {formatCurrency(stat.certified)} de {formatCurrency(stat.total_amount)}
                         </p>
                       </div>
                     </div>
-                    <Progress 
-                      value={stat.percentage} 
-                      className="h-2"
-                    />
-                  </div>
+                    <div className="space-y-1">
+                      <Progress 
+                        value={stat.percentage} 
+                        className="h-2"
+                      />
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Certificado</span>
+                        <span>Pendiente: {formatCurrency(stat.total_amount - stat.certified)}</span>
+                      </div>
+                    </div>
+                  </Link>
                 ))
               )}
             </div>

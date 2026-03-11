@@ -3,49 +3,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Empty } from '@/components/ui/empty'
-import { ClipboardCheck, Award, ArrowRight, Clock } from 'lucide-react'
+import { StatusBadge } from '@/components/ui/status-badge'
+import { ClipboardCheck, Award, ArrowRight, Clock, AlertCircle } from 'lucide-react'
+import { formatCurrency, formatDate } from '@/lib/format'
 
 interface PendingApprovalsProps {
   pendingAMs: Array<{
     id: string
     code: string
+    status: string
     period_start: string
     period_end: string
     subcontract?: {
       code: string
       subcontractor?: {
         name: string
-      }
-    }
-  }>
-  pendingCertificates: Array<{
-    id: string
-    code: string
-    total: number
-    subcontract?: {
-      code: string
-      subcontractor?: {
-        name: string
-      }
-    }
-  }>
+  }
 }
 
 export function PendingApprovals({ pendingAMs, pendingCertificates }: PendingApprovalsProps) {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount)
-  }
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: 'short',
-    })
-  }
-
   const hasItems = pendingAMs.length > 0 || pendingCertificates.length > 0
 
   return (

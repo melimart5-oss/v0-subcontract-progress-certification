@@ -2,9 +2,9 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Empty } from '@/components/ui/empty'
+import { StatusBadge } from '@/components/ui/status-badge'
 import {
   Table,
   TableBody,
@@ -13,21 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Plus, ClipboardCheck, Eye } from 'lucide-react'
-
-const statusLabels: Record<string, string> = {
-  draft: 'Borrador',
-  pending_approval: 'Pendiente',
-  approved: 'Aprobado',
-  rejected: 'Rechazado',
-}
-
-const statusVariants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  draft: 'secondary',
-  pending_approval: 'outline',
-  approved: 'default',
-  rejected: 'destructive',
-}
+import { Plus, ClipboardCheck, Eye, Calendar } from 'lucide-react'
+import { formatDate } from '@/lib/format'
 
 export default async function ActasMedicionPage() {
   const supabase = await createClient()
@@ -43,11 +30,6 @@ export default async function ActasMedicionPage() {
       )
     `)
     .order('created_at', { ascending: false })
-
-  const formatDate = (date: string | null) => {
-    if (!date) return '-'
-    return new Date(date).toLocaleDateString('es-ES')
-  }
 
   return (
     <>
@@ -96,23 +78,36 @@ export default async function ActasMedicionPage() {
                   </TableHeader>
                   <TableBody>
                     {measurementActs.map((am) => (
-                      <TableRow key={am.id}>
-                        <TableCell className="font-medium">{am.code}</TableCell>
+                      <TableRow key={am.id} className="group">
+                        <TableCell>
+                          <div>
+                            <p className="font-semibold">{am.code}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {am.subcontract?.project?.code || '-'}
+                            </p>
+                          </div>
+                        </TableCell>
                         <TableCell>{am.subcontract?.code || '-'}</TableCell>
                         <TableCell>{am.subcontract?.subcontractor?.name || '-'}</TableCell>
                         <TableCell>
-                          {formatDate(am.period_start)} - {formatDate(am.period_end)}
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                            <span className="text-sm">
+                              {formatDate(am.period_start)} - {formatDate(am.period_end)}
+                            </span>
+                          </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={statusVariants[am.status] || 'secondary'}>
-                            {statusLabels[am.status] || am.status}
-                          </Badge>
+                          <StatusBadge status={am.status} type="measurement_act" />
                         </TableCell>
-                        <TableCell>{formatDate(am.created_at)}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {formatDate(am.created_at)}
+                        </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" asChild>
+                          <Button variant="ghost" size="sm" asChild className="opacity-0 group-hover:opacity-100 transition-opacity">
                             <Link href={`/actas-medicion/${am.id}`}>
-                              <Eye className="w-4 h-4" />
+                              <Eye className="w-4 h-4 mr-1" />
+                              Ver
                             </Link>
                           </Button>
                         </TableCell>

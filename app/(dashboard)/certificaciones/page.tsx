@@ -3,8 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Empty } from '@/components/ui/empty'
+import { StatusBadge } from '@/components/ui/status-badge'
 import {
   Table,
   TableBody,
@@ -13,23 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Plus, Award, Eye } from 'lucide-react'
-
-const statusLabels: Record<string, string> = {
-  draft: 'Borrador',
-  pending_approval: 'Pendiente',
-  approved: 'Aprobado',
-  invoiced: 'Facturado',
-  paid: 'Pagado',
-}
-
-const statusVariants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  draft: 'secondary',
-  pending_approval: 'outline',
-  approved: 'default',
-  invoiced: 'secondary',
-  paid: 'default',
-}
+import { Plus, Award, Eye, Calendar } from 'lucide-react'
+import { formatCurrency, formatDate } from '@/lib/format'
 
 export default async function CertificacionesPage() {
   const supabase = await createClient()
@@ -45,18 +30,6 @@ export default async function CertificacionesPage() {
       )
     `)
     .order('created_at', { ascending: false })
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount)
-  }
-
-  const formatDate = (date: string | null) => {
-    if (!date) return '-'
-    return new Date(date).toLocaleDateString('es-ES')
-  }
 
   return (
     <>
@@ -105,25 +78,38 @@ export default async function CertificacionesPage() {
                   </TableHeader>
                   <TableBody>
                     {certificates.map((cert) => (
-                      <TableRow key={cert.id}>
-                        <TableCell className="font-medium">{cert.code}</TableCell>
+                      <TableRow key={cert.id} className="group">
+                        <TableCell>
+                          <div>
+                            <p className="font-semibold">{cert.code}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {cert.subcontract?.project?.code || '-'}
+                            </p>
+                          </div>
+                        </TableCell>
                         <TableCell>{cert.subcontract?.code || '-'}</TableCell>
                         <TableCell>{cert.subcontract?.subcontractor?.name || '-'}</TableCell>
                         <TableCell>
-                          {formatDate(cert.period_start)} - {formatDate(cert.period_end)}
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {formatCurrency(cert.total || 0)}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={statusVariants[cert.status] || 'secondary'}>
-                            {statusLabels[cert.status] || cert.status}
-                          </Badge>
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                            <span className="text-sm">
+                              {formatDate(cert.period_start)} - {formatDate(cert.period_end)}
+                            </span>
+                          </div>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" asChild>
+                          <span className="font-semibold text-primary">
+                            {formatCurrency(cert.total || 0)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge status={cert.status} type="certificate" />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm" asChild className="opacity-0 group-hover:opacity-100 transition-opacity">
                             <Link href={`/certificaciones/${cert.id}`}>
-                              <Eye className="w-4 h-4" />
+                              <Eye className="w-4 h-4 mr-1" />
+                              Ver
                             </Link>
                           </Button>
                         </TableCell>
