@@ -20,13 +20,13 @@ import { useCurrencyFormat } from '@/hooks/use-currency-format'
 
 interface Subcontract {
   id: string
-  code: string
+  internal_code: string
   description: string | null
   status: string
-  total_amount: number
+  contract_total_amount: number
   start_date: string | null
   project?: { code: string; name: string } | null
-  subcontractor?: { code: string; name: string } | null
+  subcontractor?: { id: string; company_name: string } | null
 }
 
 interface SubcontractsListProps {
@@ -81,14 +81,14 @@ export function SubcontractsList({ subcontracts, certifiedBySubcontract }: Subco
               <TableBody>
                 {subcontracts.map((subcontract) => {
                   const certified = certifiedBySubcontract[subcontract.id] || 0
-                  const total = subcontract.total_amount || 0
+                  const total = subcontract.contract_total_amount || 0
                   const progress = total > 0 ? (certified / total) * 100 : 0
                   
                   return (
                     <TableRow key={subcontract.id} className="group">
                       <TableCell>
                         <div>
-                          <p className="font-semibold">{subcontract.code}</p>
+                          <p className="font-semibold">{subcontract.internal_code}</p>
                           <p className="text-xs text-muted-foreground truncate max-w-[180px]">
                             {subcontract.description || '-'}
                           </p>
@@ -98,7 +98,7 @@ export function SubcontractsList({ subcontracts, certifiedBySubcontract }: Subco
                         <span className="text-sm">{subcontract.project?.code || '-'}</span>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm">{subcontract.subcontractor?.name || '-'}</span>
+                        <span className="text-sm">{subcontract.subcontractor?.company_name || '-'}</span>
                       </TableCell>
                       <TableCell className="text-right">
                         <div>

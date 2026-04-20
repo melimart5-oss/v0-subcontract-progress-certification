@@ -9,7 +9,7 @@ export default async function SubcontratosPage() {
     supabase.from('subcontracts').select(`
       *,
       project:projects(code, name),
-      subcontractor:subcontractors(code, name)
+      subcontractor:subcontractors(id, company_name)
     `).order('created_at', { ascending: false }),
     supabase.from('certificates').select('subcontract_id, total').in('status', ['approved', 'issued']),
   ])
