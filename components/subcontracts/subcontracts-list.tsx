@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,9 +15,26 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Plus, FileText, Eye } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Plus, FileText, Eye, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import { formatDate } from '@/lib/format'
 import { useCurrencyFormat } from '@/hooks/use-currency-format'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 
 interface Subcontract {
   id: string
@@ -36,8 +54,62 @@ interface SubcontractsListProps {
 
 export function SubcontractsList({ subcontracts, certifiedBySubcontract }: SubcontractsListProps) {
   const { format } = useCurrencyFormat()
+  const router = useRouter()
+  const supabase = createClient()
+  const [userRole, setUserRole] = useState<string | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  const checkUserRole = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+      setUserRole(profile?.role || null)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!deleteId) return
+    setDeleting(true)
+    try {
+      const { error } = await supabase
+        .from('subcontracts')
+        .delete()
+        .eq('id', deleteId)
+      
+      if (error) throw error
+      router.refresh()
+    } finally {
+      setDeleting(false)
+      setDeleteId(null)
+    }
+  }
+
+  const isAdmin = userRole === 'admin'
 
   return (
+    <>
+    {deleteId && (
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar Subcontrato</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Estás seguro de que deseas eliminar este subcontrato? Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            {deleting ? 'Eliminando...' : 'Eliminar'}
+          </AlertDialogAction>
+        </AlertDialogContent>
+      </AlertDialog>
+    )}
+
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="flex items-center gap-2">
@@ -121,12 +193,39 @@ export function SubcontractsList({ subcontracts, certifiedBySubcontract }: Subco
                         <StatusBadge status={subcontract.status} type="subcontract" />
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" asChild className="opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Link href={`/subcontratos/${subcontract.id}`}>
-                            <Eye className="w-4 h-4 mr-1" />
-                            Ver
-                          </Link>
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <Link href={`/subcontratos/${subcontract.id}`}>
+                                <Eye className="w-4 h-4 mr-2" />
+                                Ver
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link href={`/subcontratos/${subcontract.id}/editar`}>
+                                <Pencil className="w-4 h-4 mr-2" />
+                                Modificar
+                              </Link>
+                            </DropdownMenuItem>
+                            {isAdmin && (
+                              <DropdownMenuItem 
+                                onClick={() => {
+                                  checkUserRole()
+                                  setDeleteId(subcontract.id)
+                                }}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Eliminar
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   )
@@ -137,5 +236,6 @@ export function SubcontractsList({ subcontracts, certifiedBySubcontract }: Subco
         )}
       </CardContent>
     </Card>
+    </>
   )
 }
