@@ -15,12 +15,12 @@ export default async function NuevaActaMedicionPage({ searchParams }: PageProps)
     .from('subcontracts')
     .select(`
       id, 
-      code, 
-      subcontractor:subcontractors(name),
-      items:subcontract_items(*)
+      internal_code, 
+      subcontractor:subcontractors(company_name),
+      items:subcontract_items(id, item_code, description, unit, unit_price, contracted_quantity, sort_order)
     `)
-    .eq('status', 'active')
-    .order('code')
+    .in('status', ['active', 'draft'])
+    .order('internal_code')
 
   // If subcontract is pre-selected, get its items
   let preselectedSubcontract = null

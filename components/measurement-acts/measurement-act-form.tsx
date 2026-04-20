@@ -23,17 +23,18 @@ import { useCurrencyFormat } from '@/hooks/use-currency-format'
 
 interface SubcontractItem {
   id: string
-  item_number: string
+  item_code: string
   description: string
   unit: string
   unit_price: number
   contracted_quantity: number
+  sort_order: number
 }
 
 interface Subcontract {
   id: string
-  code: string
-  subcontractor?: { name: string }
+  internal_code: string
+  subcontractor?: { company_name: string }
   items?: SubcontractItem[]
 }
 
@@ -59,9 +60,8 @@ interface MeasurementActFormProps {
 
 interface MeasuredItem {
   subcontract_item_id: string
-  measured_quantity: number
+  current_quantity: number
   accumulated_quantity: number
-  notes: string
 }
 
 export function MeasurementActForm({ 
@@ -74,11 +74,10 @@ export function MeasurementActForm({
   const isEditing = !!initialData
 
   const [formData, setFormData] = useState({
-    code: initialData?.code || '',
     subcontract_id: initialData?.subcontract_id || preselectedSubcontract?.id || '',
     period_start: initialData?.period_start || '',
     period_end: initialData?.period_end || '',
-    notes: initialData?.notes || '',
+    observations: initialData?.notes || '',
   })
 
   const [selectedSubcontract, setSelectedSubcontract] = useState<Subcontract | null>(
@@ -97,37 +96,24 @@ export function MeasurementActForm({
       
       // Initialize measured items based on subcontract items
       if (found?.items) {
-        if (initialData?.items) {
-          // Use existing data
-          setMeasuredItems(
-            found.items.map(item => {
-              const existing = initialData.items?.find(
-                mi => mi.subcontract_item_id === item.id
-              )
-              return {
-                subcontract_item_id: item.id,
-                measured_quantity: existing?.measured_quantity || 0,
-                accumulated_quantity: existing?.accumulated_quantity || 0,
-                notes: existing?.notes || '',
-              }
-            })
-          )
-        } else {
-          // Initialize with zeros
-          setMeasuredItems(
-            found.items.map(item => ({
+        const sorted = [...found.items].sort((a, b) => a.sort_order - b.sort_order)
+        setMeasuredItems(
+          sorted.map(item => {
+            const existing = initialData?.items?.find(
+              mi => mi.subcontract_item_id === item.id
+            )
+            return {
               subcontract_item_id: item.id,
-              measured_quantity: 0,
-              accumulated_quantity: 0,
-              notes: '',
-            }))
-          )
-        }
+              current_quantity: existing?.measured_quantity || 0,
+              accumulated_quantity: existing?.accumulated_quantity || 0,
+            }
+          })
+        )
       }
     }
   }, [formData.subcontract_id, subcontracts, initialData])
 
-  const updateMeasuredItem = (itemId: string, field: keyof MeasuredItem, value: number | string) => {
+  const updateMeasuredItem = (itemId: string, field: 'current_quantity' | 'accumulated_quantity', value: number) => {
     setMeasuredItems(prev => 
       prev.map(item => 
         item.subcontract_item_id === itemId 
@@ -149,18 +135,19 @@ export function MeasurementActForm({
       const status = submitForApproval ? 'pending_approval' : 'draft'
 
       if (isEditing) {
-        // Update measurement act
         const { error: updateError } = await supabase
           .from('measurement_acts')
           .update({
-            ...formData,
+            subcontract_id: formData.subcontract_id,
+            period_start: formData.period_start || null,
+            period_end: formData.period_end || null,
+            observations: formData.observations || null,
             status,
           })
           .eq('id', initialData.id)
 
         if (updateError) throw updateError
 
-        // Delete existing items and re-insert
         await supabase
           .from('measurement_act_items')
           .delete()
@@ -172,21 +159,22 @@ export function MeasurementActForm({
             measuredItems.map(item => ({
               measurement_act_id: initialData.id,
               subcontract_item_id: item.subcontract_item_id,
-              measured_quantity: item.measured_quantity,
+              current_quantity: item.current_quantity,
               accumulated_quantity: item.accumulated_quantity,
-              notes: item.notes || null,
+              previous_quantity: 0,
             }))
           )
 
         if (itemsError) throw itemsError
-
         router.push(`/actas-medicion/${initialData.id}`)
       } else {
-        // Create new measurement act
         const { data: am, error: createError } = await supabase
           .from('measurement_acts')
           .insert({
-            ...formData,
+            subcontract_id: formData.subcontract_id,
+            period_start: formData.period_start || null,
+            period_end: formData.period_end || null,
+            observations: formData.observations || null,
             status,
             created_by: user.id,
           })
@@ -195,21 +183,19 @@ export function MeasurementActForm({
 
         if (createError) throw createError
 
-        // Insert measurement items
         const { error: itemsError } = await supabase
           .from('measurement_act_items')
           .insert(
             measuredItems.map(item => ({
               measurement_act_id: am.id,
               subcontract_item_id: item.subcontract_item_id,
-              measured_quantity: item.measured_quantity,
+              current_quantity: item.current_quantity,
               accumulated_quantity: item.accumulated_quantity,
-              notes: item.notes || null,
+              previous_quantity: 0,
             }))
           )
 
         if (itemsError) throw itemsError
-
         router.push(`/actas-medicion/${am.id}`)
       }
 
@@ -249,17 +235,7 @@ export function MeasurementActForm({
         <CardContent>
           <FieldGroup>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Field>
-                <FieldLabel htmlFor="code">Código AM *</FieldLabel>
-                <Input
-                  id="code"
-                  value={formData.code}
-                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                  placeholder="AM-001"
-                  required
-                />
-              </Field>
-              <Field className="lg:col-span-3">
+              <Field className="lg:col-span-4">
                 <FieldLabel htmlFor="subcontract">Subcontrato *</FieldLabel>
                 <Select
                   value={formData.subcontract_id}
@@ -267,12 +243,15 @@ export function MeasurementActForm({
                   disabled={!!preselectedSubcontract}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecciona subcontrato" />
+                    <SelectValue placeholder="Seleccionar subcontrato..." />
                   </SelectTrigger>
                   <SelectContent>
+                    {subcontracts.length === 0 && (
+                      <SelectItem value="__none__" disabled>No hay subcontratos disponibles</SelectItem>
+                    )}
                     {subcontracts.map((sub) => (
                       <SelectItem key={sub.id} value={sub.id}>
-                        {sub.code} - {sub.subcontractor?.name}
+                        {sub.internal_code} - {sub.subcontractor?.company_name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -302,12 +281,12 @@ export function MeasurementActForm({
               </Field>
             </div>
             <Field>
-              <FieldLabel htmlFor="notes">Observaciones</FieldLabel>
+              <FieldLabel htmlFor="observations">Observaciones</FieldLabel>
               <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Notas adicionales sobre la medición"
+                id="observations"
+                value={formData.observations}
+                onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
+                placeholder="Notas adicionales sobre la medicion"
                 rows={2}
               />
             </Field>
@@ -339,11 +318,11 @@ export function MeasurementActForm({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {selectedSubcontract.items.map((item) => {
+                  {selectedSubcontract.items.sort((a, b) => a.sort_order - b.sort_order).map((item) => {
                     const measured = measuredItems.find(mi => mi.subcontract_item_id === item.id)
                     return (
                       <TableRow key={item.id}>
-                        <TableCell className="font-medium">{item.item_number}</TableCell>
+                        <TableCell className="font-medium">{item.item_code}</TableCell>
                         <TableCell>{item.description}</TableCell>
                         <TableCell>{item.unit}</TableCell>
                         <TableCell className="text-right">{formatCurrency(item.unit_price)}</TableCell>
@@ -353,10 +332,10 @@ export function MeasurementActForm({
                             type="number"
                             step="0.01"
                             min="0"
-                            value={measured?.measured_quantity || 0}
+                            value={measured?.current_quantity || 0}
                             onChange={(e) => updateMeasuredItem(
                               item.id, 
-                              'measured_quantity', 
+                              'current_quantity', 
                               parseFloat(e.target.value) || 0
                             )}
                             className="w-full"
@@ -377,7 +356,7 @@ export function MeasurementActForm({
                           />
                         </TableCell>
                         <TableCell className="text-right font-medium">
-                          {formatCurrency(calculateItemAmount(item, measured?.measured_quantity || 0))}
+                          {formatCurrency(calculateItemAmount(item, measured?.current_quantity || 0))}
                         </TableCell>
                       </TableRow>
                     )
