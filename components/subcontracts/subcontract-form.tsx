@@ -142,6 +142,7 @@ export function SubcontractForm({ projects, subcontractors, initialData }: Subco
               unit: item.unit,
               unit_price: item.unit_price,
               contracted_quantity: item.contracted_quantity,
+              total_amount: item.unit_price * item.contracted_quantity,
               sort_order: index + 1,
             }))
           )
@@ -179,6 +180,7 @@ export function SubcontractForm({ projects, subcontractors, initialData }: Subco
           unit: item.unit,
           unit_price: item.unit_price,
           contracted_quantity: item.contracted_quantity,
+          total_amount: item.unit_price * item.contracted_quantity,
           sort_order: index + 1,
         }))
         
